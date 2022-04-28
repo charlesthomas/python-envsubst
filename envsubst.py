@@ -36,7 +36,13 @@ _simple_re = re.compile(r'(?<!\\)\$([A-Za-z0-9_]+)')
 _extended_re = re.compile(r'(?<!\\)\$\{([A-Za-z0-9_]+)((:?-)([^}]+))?\}')
 
 
-def _resolve_var(var_name, default=None):
+def _resolve_var(var_name, default=None, simple=False):
+    if simple:
+        var = '$' + var_name
+    else:
+        var = '${' + var_name + '}'
+    default = default or var
+
     try:
         index = int(var_name)
         try:
@@ -49,7 +55,7 @@ def _resolve_var(var_name, default=None):
 
 def _repl_simple_env_var(m):
     var_name = m.group(1)
-    return _resolve_var(var_name, '')
+    return _resolve_var(var_name, simple=True)
 
 
 def _repl_extended_env_var(m):
@@ -60,7 +66,7 @@ def _repl_extended_env_var(m):
         default = _simple_re.sub(_repl_simple_env_var, default)
         if m.group(3) == ':-':
             # use default if var is unset or empty
-            env_var = _resolve_var(var_name)
+            env_var = _resolve_var(var_name, default)
             if env_var:
                 return env_var
             else:
@@ -71,7 +77,7 @@ def _repl_extended_env_var(m):
         else:
             raise RuntimeError('unexpected string matched regex')
     else:
-        return _resolve_var(var_name, '')
+        return _resolve_var(var_name)
 
 
 def envsubst(string):

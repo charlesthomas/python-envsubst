@@ -159,3 +159,73 @@ class TestEnvsubst(unittest.TestCase):
         expected = test_fmt.format(test_val)
         actual = envsubst(test_str)
         self.assertEqual(actual, expected)
+
+    def test_undef_as_is_simple_vars(self):
+        simple = 'before $var1 $var2 after'
+        os.environ['var1'] = 'this should be present'
+        try:
+            del os.environ['var2']
+        except KeyError:
+            pass
+
+        expected = 'before this should be present $var2 after'
+        actual = envsubst(simple)
+        self.assertEqual(expected, actual)
+
+    def test_undef_as_is_complex_vars_no_opts(self):
+        complex_no_opts = 'before ${var1} ${var2} after'
+        os.environ['var1'] = 'STRING!'
+        try:
+            del os.environ['var2']
+        except KeyError:
+            pass
+
+        expected = 'before STRING! ${var2} after'
+        actual = envsubst(complex_no_opts)
+        self.assertEqual(expected, actual)
+
+    def test_undef_as_is_dash_unset(self):
+        dash_unset = 'before ${var1} ${var2-SET} after'
+        os.environ['var1'] = 'value'
+        try:
+            del os.environ['var2']
+        except KeyError:
+            pass
+
+        expected = 'before value SET after'
+        actual = envsubst(dash_unset)
+        self.assertEqual(expected, actual)
+
+    def test_undef_as_is_dash_set_empty(self):
+        dash_set_empty = 'before ${var1} ${var2} after'
+        os.environ['var1'] = 'val'
+        os.environ['var2'] = ''
+
+        expected = 'before val  after'
+        actual = envsubst(dash_set_empty)
+        self.assertEqual(expected, actual)
+
+    def test_undef_as_is_colon_unset(self):
+        colon_unset = 'before ${var1} ${var2:-two} after'
+        os.environ['var1'] = 'one'
+        try:
+            del os.environ['var2']
+        except KeyError:
+            pass
+
+        expected = 'before one two after'
+        actual = envsubst(colon_unset)
+        self.assertEqual(expected, actual)
+
+    def test_undef_as_is_colon_set_empty(self):
+        colon_set_empty = 'before ${var1} ${var2:-two} after'
+        os.environ['var1'] = 'one'
+        os.environ['var2'] = ''
+
+        expected = 'before one two after'
+        actual = envsubst(colon_set_empty)
+        self.assertEqual(expected, actual)
+
+
+if __name__ == '__main__':
+    unittest.main()
